@@ -1,0 +1,281 @@
+---
+title: 'Semester 7: Aufgabe 3 - Fehlerrechnung'
+author: "Hans Brabenetz"
+date: "8/8/2020"
+output: html_document
+---
+
+## Aufgabenstellung
+
+Aufgabenstellung findet man auf [elearning](https://elearning.tgm.ac.at/mod/assign/view.php?id=79406)
+
+## Durchführung
+### Aufgabe 1
+#### Teil 1: state.x77 beschreiben / Regresionmodell aufstellen
+Daten beschreiben:
+Population - Bevölkerung pro 1000 in verschiedenen Staaten Amerikas (1975) - metrisch                      
+Income     - Durchschnittseinkommen pro Kopf, welches im Jahr 1974        - metrisch und rationalskalliert 
+Illiteracy - Prozentsatz der Analphabeten eines Bundesstaates             - metrisch und rationalskalliert 
+Life Exp   - Lebenserwartung                                              - metrisch und rationalskalliert 
+Murder     - Mord- und nicht-fahrl¨ assige T¨ otungsrate pro 100000 Einwohner eines Bundesstaates - metrisch und rationalskalliert 
+HS Grad    - Prozentsatz der Absolventen einer weiterfuhrenden Schule eines Bundesstaates - metrisch und rationalskalliert 
+Frost      - Tage bei denen es unter 0 Grad Celsius in einer großen Stadt hat - metrisch                      
+Area       - Fläche eines Bundesstaates in Quadratmeilen                  - metrisch   
+```{r}
+pop <- state.x77[,"Population"]
+inc <- state.x77[,"Income"]
+ill <- state.x77[,"Illiteracy"]
+life <- state.x77[,"Life Exp"]
+mur <- state.x77[,"Murder"]
+hg <- state.x77[,"HS Grad"]
+fr <- state.x77[,"Frost"]
+area <- state.x77[,"Area"]
+
+# Modell
+
+statelm <- lm(mur~pop+life)
+summary(statelm)
+```
+
+#### Teil 2: Ermittle die 95%- und 99%-Konfidenzintervalle
+Funktion um die Arbeit zu erleichtern
+```{r}
+
+boxError <- function (var,name, n , pro1, pro2) {
+ mw <- mean(var)
+ sd <- sd(var)
+ qu1 <- (1-pro1)/2
+ qo1 <- pro1+(1-pro1)/2
+
+ qu2 <- (1-pro2)/2
+ qo2 <- pro2+(1-pro2)/2
+
+ ku1 <- mw + sd/sqrt(n)*qnorm(qu1)
+ ko1 <- mw + sd/sqrt(n)*qnorm(qo1)
+
+ ku2 <- mw + sd/sqrt(n)*qnorm(qu2)
+ ko2 <- mw + sd/sqrt(n)*qnorm(qo2)
+
+ boxplot(var,horizontal=T, main=paste("Boxplot von",name))
+ lines(c(mw,mw), c(0.9, 1.1), col="purple")
+ lines(c(ku1,ku1), c(0.75, 1.25), col="red")
+ lines(c(ko1,ko1), c(0.75, 1.25), col="red")
+ lines(c(ku1,ko1), c(1, 1), col="red")
+
+ lines(c(ku2,ku2), c(0.75, 1.25), col="blue")
+ lines(c(ko2,ko2), c(0.75, 1.25), col="blue")
+ lines(c(ku2,ko2), c(1, 1), col="blue")
+
+ legend("topright", legend=c(pro1*100, pro2*100, "Mittelwert"), col= c("red", "blue", "purple"))
+ }
+```
+Einzelne Variablen:
+```{r}
+
+
+boxError(mur,"Murder", nrow(state.x77), 0.95, 0.99)
+boxError(pop,"Population", nrow(state.x77), 0.95, 0.99)
+boxError(inc,"Income", nrow(state.x77), 0.95, 0.99)
+boxError(ill,"Illiteracy", nrow(state.x77), 0.95, 0.99)
+boxError(life,"Life Exp", nrow(state.x77), 0.95, 0.99)
+
+```
+
+#### Teil 3: Ermittle die Prädiktionswerte
+Für die ermittlung der Prädiktionswerten brauchen wir nur die Bevölkerung und die Lebenserwartung (da die anderen Variablen nicht im Modell benutzt werden).
+```{r}
+datensatz_predict <- data.frame(pop=100000,life=78)
+
+#95% Prädiktionsintervall
+predict(statelm,interval = c("prediction"),newdata=datensatz_predict, level=0.95)
+
+#95% Prädiktionsintervall
+predict(statelm,interval = c("prediction"),newdata=datensatz_predict, level=0.99)
+
+```
+
+#### Teil 4: Prädiktion fur die einzelnen Staaten aufstellen
+
+```{r}
+
+datensatz_predict_2 <- data.frame(pop=pop,life=life+0.25)
+
+pr<-predict(statelm,interval = c("prediction"),newdata=datensatz_predict_2, level=0.95) 
+plot(pr[,1],main="US States",ylim=c(0,18),ylab="Mordrate")
+for(i in 1:nrow(pr)){
+ lines(c(i,i),c(pr[i,2],pr[i,3]), col="red")
+ lines(c(i-0.25,i+0.25),c(pr[i,3],pr[i,3]), col="red")
+ lines(c(i-0.25,i+0.25),c(pr[i,2],pr[i,2]), col="red")
+ 
+}
+
+```
+
+### Aufgabe 2
+
+#### Teil 1: pima.tr beschreiben / Regresionmodell aufstellen / sensitivity & specificity
+
+Daten beschreiben:
+npreg - Anzahl der Schwangerschaften - rational skaliert
+glu - Plasmaglukosekonzentration in einem oralen Glukosetoleranztest - rational skaliert
+bp - Diastolischer Blutdruck in mm Hg - rational skaliert
+skin - Dicke der Trizepshautfalten in mm - rational skaliert
+bmi - Body Mass Index - rational skaliert
+ped - Wert der Diabetes-Stammbaum-Funktion - rational skaliert
+age - Alter - rational skaliert
+type - Diabetes-Typ - nominal
+
+```{r}
+
+library(MASS)
+
+npreg <- Pima.tr[,"npreg"]
+glu <- Pima.tr[,"glu"]
+bp <- Pima.tr[,"bp"]
+skin <- Pima.tr[,"skin"]
+bmi <- Pima.tr[,"bmi"]
+ped <- Pima.tr[,"ped"]
+age <- Pima.tr[,"age"]
+type <- Pima.tr[,"type"]
+
+
+```
+
+##### Regressionmodell
+```{r}
+ pima <- glm(type~npreg+glu+bmi+ped,family=binomial(link = "logit"))
+ summary(pima)
+
+```
+Das Regressionsmodell:
+$$
+logit(type) = -9.511073  + 0.170163  * npreg - 0.034386 * glu +  0.004582 * bp + 0.079323 * bmi + 1.760922 * ped
+$$
+
+##### sensitivity & specificity
+```{r}
+ library(pROC)
+  pr<-predict(pima, newdata = Pima.tr[,c("npreg","glu","bmi","ped")])
+  df<-data.frame(cbind(labels = as.numeric(Pima.tr[,"type"])-1), predictions=ifelse(pr<=0,0,1))
+  pROC_obj <- roc(response = df$labels,
+ predictor=df$predictions,
+ smoothed = TRUE,
+ # arguments for confidence interval
+ ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+ # arguments for plot
+ plot=TRUE, auc.polygon=TRUE,
+ max.auc.polygon=TRUE, grid=TRUE,
+ print.auc=TRUE, show.thres=TRUE)
+  # calculates confidence region
+  sens.ci <- ci.se(pROC_obj)
+  # colours confidence region lightblue
+  plot(sens.ci, type="shape", col="lightblue")
+  # adds error bars to plot
+  plot(sens.ci, type="bars")
+  (pROC_obj$sensitivities)
+  (pROC_obj$specificities)
+  
+```
+```{Text}
+True positive: 57%
+True negative: 43%
+False positive: 90%
+False negative: 10%
+```
+
+#### Teil 2: ROC und AUC
+
+Wenn man sich jetzt den ROC betrachtet sieht man, dass das Modell besser als eine 50%
+Chance hat (AUC 0.741). Nichtsdestotrotz besitzt, dass Modell keine starke Aussagekraft
+und hat Verbesserungspotenzial wenn es um voraussagen uber Diabetes geht
+
+#### Teil 3: Prädiktion
+
+```{r}
+
+  pr2<-predict(pima, newdata = Pima.te[,c("npreg","glu","bmi","ped")])
+  df2<-data.frame(cbind(labels = as.numeric(Pima.te[,"type"])-1), predictions=ifelse(pr2<=0,0,1))
+  pROC_obj2 <- roc(response = df2$labels,
+  predictor=df2$predictions,
+  smoothed = TRUE,
+  # arguments for confidence interval
+  ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+  # arguments for plot
+  plot=TRUE, auc.polygon=TRUE,
+  max.auc.polygon=TRUE, grid=TRUE,
+  print.auc=TRUE, show.thres=TRUE)
+  # calculates confidence region
+  sens.ci <- ci.se(pROC_obj2)
+  # colours confidence region lightblue
+  plot(sens.ci, type="shape", col="lightblue")
+  # adds error bars to plot
+  plot(sens.ci, type="bars")
+  plot.roc(pROC_obj, add=TRUE, col="red")
+
+```
+```{Text}
+True positive: 61%
+True negative: 39%
+False positive: 90%
+False negative: 10%
+```
+
+### Aufgabe 3
+#### Teil 1 Konfidenzintervalle
+
+```{r, echo=FALSE}
+
+# 95 %
+
+relS <- apply(Titanic,c(2,4),sum)/apply(Titanic,c(2),sum)
+  abs <- apply(Titanic,c(2),sum)
+  myu1 <- relS["Male", "Yes"] + sqrt((relS["Male", "Yes"]*(1-relS["Male", "Yes"]))/abs["Male"]) * qnorm(0.025)
+  myo1 <-relS["Male", "Yes"] + sqrt((relS["Male", "Yes"]*(1-relS["Male", "Yes"]))/abs["Male"]) * qnorm(0.975)
+  mnu1 <- relS["Male", "No"] + sqrt((relS["Male", "No"]*(1-relS["Male", "No"]))/abs["Male"]) * qnorm(0.025)
+  mno1 <-relS["Male", "No"] + sqrt((relS["Male", "No"]*(1-relS["Male", "No"]))/abs["Male"]) * qnorm(0.975)
+  fyu1 <- relS["Female", "Yes"] + sqrt((relS["Female", "Yes"]*(1-relS["Female", "Yes"]))/abs["Female"]) * qnorm(0.025)
+  fyo1 <- relS["Female", "Yes"] + sqrt((relS["Female", "Yes"]*(1-relS["Female", "Yes"]))/abs["Female"]) * qnorm(0.975)
+  fnu1 <- relS["Female", "No"] + sqrt((relS["Female", "No"]*(1-relS["Female", "No"]))/abs["Female"]) * qnorm(0.025)
+  fno1 <- relS["Female", "No"] + sqrt((relS["Female", "No"]*(1-relS["Female", "No"]))/abs["Female"]) * qnorm(0.975)
+  barplot(relS,beside=T, ylim=c(0,0.9),main="Überlebensrate für die Geschlechter 95% Konfidenzintervall)", col=c("lightblue","lightgray"))
+  lines(c(1,2),c(mno1,mno1), col="red")
+  lines(c(1,2),c(mnu1,mnu1), col="red")
+  lines(c(1.5,1.5),c(mnu1,mno1), col="red")
+  lines(c(2,3),c(fno1,fno1), col="red")
+  lines(c(2,3),c(fnu1,fnu1), col="red")
+  lines(c(2.5,2.5),c(fnu1,fno1), col="red")
+  lines(c(4,5),c(myo1,myo1), col="red")
+  lines(c(4,5),c(myu1,myu1), col="red")
+  lines(c(4.5,4.5),c(myu1,myo1), col="red")
+  lines(c(5,6),c(fyo1,fyo1), col="red")
+  lines(c(5,6),c(fyu1,fyu1), col="red")
+  lines(c(5.5,5.5),c(fyu1,fyo1), col="red")
+  legend("top",legend=c("Male","Female"),col=c("lightblue","lightgray"),lwd=5)
+  
+# 99 %
+  relS <- apply(Titanic,c(2,4),sum)/apply(Titanic,c(2),sum)
+  abs <- apply(Titanic,c(2),sum)
+  myu1 <- relS["Male", "Yes"] + sqrt((relS["Male", "Yes"]*(1-relS["Male", "Yes"]))/abs["Male"]) * qnorm(0.005)
+  myo1 <-relS["Male", "Yes"] + sqrt((relS["Male", "Yes"]*(1-relS["Male", "Yes"]))/abs["Male"]) * qnorm(0.995)
+  mnu1 <- relS["Male", "No"] + sqrt((relS["Male", "No"]*(1-relS["Male", "No"]))/abs["Male"]) * qnorm(0.005)
+  mno1 <-relS["Male", "No"] + sqrt((relS["Male", "No"]*(1-relS["Male", "No"]))/abs["Male"]) * qnorm(0.995)
+  fyu1 <- relS["Female", "Yes"] + sqrt((relS["Female", "Yes"]*(1-relS["Female", "Yes"]))/abs["Female"]) * qnorm(0.005)
+  fyo1 <- relS["Female", "Yes"] + sqrt((relS["Female", "Yes"]*(1-relS["Female", "Yes"]))/abs["Female"]) * qnorm(0.995)
+  fnu1 <- relS["Female", "No"] + sqrt((relS["Female", "No"]*(1-relS["Female", "No"]))/abs["Female"]) * qnorm(0.005)
+  fno1 <- relS["Female", "No"] + sqrt((relS["Female", "No"]*(1-relS["Female", "No"]))/abs["Female"]) * qnorm(0.995)
+  barplot(relS,beside=T, ylim=c(0,0.9),main="Überlebensrate für die Geschlechter (99% Konfidenzintervall)", col=c("lightblue","lightgray"))
+  lines(c(1,2),c(mno1,mno1), col="red")
+  lines(c(1,2),c(mnu1,mnu1), col="red")
+  lines(c(1.5,1.5),c(mnu1,mno1), col="red")
+  lines(c(2,3),c(fno1,fno1), col="red")
+  lines(c(2,3),c(fnu1,fnu1), col="red")
+  lines(c(2.5,2.5),c(fnu1,fno1), col="red")
+  lines(c(4,5),c(myo1,myo1), col="red")
+  lines(c(4,5),c(myu1,myu1), col="red")
+  lines(c(4.5,4.5),c(myu1,myo1), col="red")
+  lines(c(5,6),c(fyo1,fyo1), col="red")
+  lines(c(5,6),c(fyu1,fyu1), col="red")
+  lines(c(5.5,5.5),c(fyu1,fyo1), col="red")
+  legend("top",legend=c("Male","Female"),col=c("lightblue","lightgray"),lwd=5)
+
+```
