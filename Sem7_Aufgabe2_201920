@@ -1,0 +1,222 @@
+---
+title: 'Semester 7: Aufgabe 2 - Grundlagen der Statistischen Modellierung'
+author: "Hans Brabenetz"
+date: "8/8/2020"
+output: html_document
+---
+
+## Aufgabenstellung
+
+Aufgabenstellung findet man auf [elearning](https://elearning.tgm.ac.at/mod/assign/view.php?id=78390)
+
+## Durchführung
+### Aufgabe 1
+#### Teil 1: state.x77
+
+```{r}
+# Load state.x77
+
+# Hilfe
+help("state.x77")
+# or ?state.x77
+```
+Daten beschreiben:
+Population - Bevölkerung pro 1000 in verschiedenen Staaten Amerikas (1975) - metrisch                      
+Income     - Durchschnittseinkommen pro Kopf, welches im Jahr 1974        - metrisch und rationalskalliert 
+Illiteracy - Prozentsatz der Analphabeten eines Bundesstaates             - metrisch und rationalskalliert 
+Life Exp   - Lebenserwartung                                              - metrisch und rationalskalliert 
+Murder     - Mord- und nicht-fahrl¨ assige T¨ otungsrate pro 100000 Einwohner eines Bundesstaates - metrisch und rationalskalliert 
+HS Grad    - Prozentsatz der Absolventen einer weiterfuhrenden Schule eines Bundesstaates - metrisch und rationalskalliert 
+Frost      - Tage bei denen es unter 0 Grad Celsius in einer großen Stadt hat - metrisch                      
+Area       - Fläche eines Bundesstaates in Quadratmeilen                  - metrisch       
+
+#### Teil 2: Lineares Regressionsmodell
+
+```{r}
+
+# Abhängigkeit der unabhängigen Variablen herausfinden
+
+panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...)
+ {
+ usr <- par("usr"); on.exit(par(usr))
+ par(usr = c(0, 1, 0, 1))
+ r <- abs(cor(x, y))
+ txt <- format(c(r, 0.123456789), digits = digits)[1]
+ txt <- paste0(prefix, txt)
+ if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+ text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+
+pairs(state.x77[,c ("Population", "Income", "Illiteracy", "Life Exp", "Murder")],
+lower.panel = panel.smooth, upper.panel = panel.cor)
+
+# Abhängigkeit zwischen Life Exp und Illiteracy muss aus der Welt geschafft werden, nur ist die Frage was aus dem Modell genommen werden muss
+# man sollte sich für Illiteracy entscheiden da Illiteracy weitere Abhängigkeiten besitzt
+```
+Modell bilden: 
+```{r}
+
+murlm<-glm(formula = state.x77[, "Murder"] ~ state.x77[, "Population"] + state.x77[, "Income"] + state.x77[,"Life Exp"])
+
+summary(murlm)
+
+```
+Das Regressionsmodell:
+$$
+Murder = 1.530 * 10^2 + 2.487 * 10^{-4} * Population - 2.309 * 10^{-4} * Income - 2.055 * LifeExp
+$$
+Grafisch Darstellen:
+```{r}
+par(mfrow=c(2,2))
+plot(murlm,which=1)
+plot(murlm,which=2)
+plot(murlm,which=3)
+plot(murlm,which=5)
+```
+
+#### Teil 3: Modellvoraussetzungen 
+Checkliste:
+Das Modell hat keinen systematischen Fehler
+Die Fehlervarianz ist fur alle Beobachtungen gleich groß (homoskedastisch)
+Die Komponenten des Fehlerterms sind nicht korreliert
+Der Modellfehler sei normalverteilt.
+Es gibt keine lin. Abhängigkeiten zwischen den Regressoren
+
+#### Teil 4: Modellselektion
+```{r}
+st<-state.x77
+st<-st[,c(-8,-7,-6)]
+st<-st[,c(-3)]
+
+pairs(st, lower.panel = panel.smooth, upper.panel = panel.cor, gap = 0, row1attop = FALSE)
+
+murlm<-glm(formula = state.x77[, "Murder"] ~ state.x77[, "Population"] + state.x77[,"Life Exp"])
+
+summary(murlm)
+
+```
+
+#### Teil 5: LASSO, Ridge & elastic net
+```{r}
+
+library(glmnet)
+
+stx<-state.x77[,c("Population","Income","Life Exp")]
+sty<-state.x77[,"Murder"]
+
+### Lasso
+
+## Lambda = 1
+result<-glmnet(stx,sty,family="gaussian", alpha=1, lambda=1)
+result$beta
+
+## Lambda = 0.1
+result<-glmnet(stx,sty,family="gaussian", alpha=1, lambda=0.1)
+result$beta
+
+### Ridge
+
+## Lambda = 1
+result<-glmnet(stx,sty,family="gaussian", alpha=0, lambda=1)
+result$beta
+
+## Lambda = 0.1
+result<-glmnet(stx,sty,family="gaussian", alpha=0, lambda=0.1)
+result$beta
+
+### Elastic Net
+
+## Lambda = 1
+result<-glmnet(stx,sty,family="gaussian", alpha=0.5, lambda=1)
+result$beta
+
+## Lambda = 0.1
+result<-glmnet(stx,sty,family="gaussian", alpha=0.5, lambda=0.1)
+result$beta
+
+```
+
+### Aufgabe 2
+
+#### Teil 1: Datensatz beschreiben
+```{r}
+
+library(MASS)
+help(Pima.tr)
+
+```
+Daten beschreiben:
+npreg - Anzahl der Schwangerschaften - rational skaliert
+glu - Plasmaglukosekonzentration in einem oralen Glukosetoleranztest - rational skaliert
+bp - Diastolischer Blutdruck in mm Hg - rational skaliert
+skin - Dicke der Trizepshautfalten in mm - rational skaliert
+bmi - Body Mass Index - rational skaliert
+ped - Wert der Diabetes-Stammbaum-Funktion - rational skaliert
+age - Alter - rational skaliert
+type - Diabetes-Typ - nominal
+
+#### Teil 2: logistisches Regressionsmodell
+
+```{r}
+pima <- Pima.tr
+pairs(pima, lower.panel = panel.smooth, upper.panel = panel.cor, gap = 0, row1attop = FALSE)
+
+pimalm <-glm(pima[, "type"]~pima[,"npreg"]+pima[,"glu"]+pima[,"bp"] + pima[,"bmi"]+pima[,"ped"], family=binomial(link = "logit"))
+
+summary(pimalm)
+```
+Das Regressionsmodell:
+$$
+logit(type) = -9.511073  + 0.170163  * npreg - 0.034386 * glu +  0.004582 * bp + 0.079323 * bmi + 1.760922 * ped
+$$
+#### Teil 3: Modellselektion
+
+```{r}
+pimalm_ver2 <-glm(pima[, "type"]~pima[,"npreg"]+pima[,"glu"] + pima[,"bmi"]+pima[,"ped"], family=binomial(link = "logit"))
+summary(pimalm_ver2)
+```
+Das Regressionsmodell:
+$$
+logit(type) = -9.511073  + 0.170163  * npreg - 0.034386 * glu +  0.004582 * bp + 0.079323 * bmi + 1.760922 * ped
+$$
+#### Teil 4: Prädiktive Qualität
+```{r}
+ library(MASS)
+ library(pROC)
+ pimaData <- Pima.tr
+ type <- Pima.tr["type"]
+ age <- Pima.tr["age"]
+ bmi <- Pima.tr["bmi"]
+ bp <- Pima.tr["bp"]
+ glu <- Pima.tr["glu"]
+ pima <- glm(type ~ age+bmi+bp+glu,data=pimaData,family=binomial(link = "logit"))
+ summary(pima)
+ # predictions
+ pr<-predict(pima, newdata = Pima.tr[,c("age","bmi","bp","glu")])
+ df<-data.frame(cbind(labels = as.numeric(Pima.tr$type)-1), predictions=ifelse(pr<=0,0,1))
+ pROC_obj <- roc(response = df$labels,
+predictor=df$predictions,
+ smoothed = TRUE,
+ # arguments for confidence interval
+ ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+ # arguments for plot
+ plot=TRUE, auc.polygon=TRUE,
+ max.auc.polygon=TRUE, grid=TRUE,
+ print.auc=TRUE, show.thres=TRUE)
+ # calculates confidence region
+ sens.ci <- ci.se(pROC_obj)
+ # colours confidence region lightblue
+ plot(sens.ci, type="shape", col="lightblue")
+ # adds error bars to plot
+ plot(sens.ci, type="bars")
+ 
+  
+
+
+```
+
+Sensitivities und Specificities
+```{r}
+ (pROC_obj$sensitivities)
+ (pROC_obj$specificities)
+```
