@@ -1,0 +1,312 @@
+---
+title: 'Semester 8: Aufgabe 1'
+author: "Hans Brabenetz"
+date: "8/8/2020"
+output: html_document
+---
+
+## Aufgabenstellung
+
+Aufgabenstellung findet man auf [elearning](https://elearning.tgm.ac.at/mod/assign/view.php?id=83045)
+
+## Durchführung
+### Aufgabe 1
+#### Teil 1: Lineares Modell
+
+##### Datensatz laden
+```{r}
+#install.packages("ggplot2")
+library("ggplot2")
+library(ggplot2)
+help("economics")
+```
+
+##### Lineares Modell
+```{r}
+economics[,'uempmedTage'] <- economics[,'uempmed'] * 7
+limUnUe <- glm(unemploy ~ uempmedTage, data = economics)
+limUeUn <- glm(uempmedTage ~ unemploy, data = economics)
+
+par(mfrow=c(1,2))
+plot(unemploy ~ uempmedTage, data = economics)
+abline(limUnUe, lw= 2, col = "red")
+plot(uempmedTage ~ unemploy, data = economics)
+abline(limUeUn, lw= 2, col = "red")
+
+```
+
+#### Teil 2-7: Exponentialfunktion exp bzw Logarithmusfunktion log
+
+##### Exponentiales Modell
+```{r}
+
+expLimUnUe <- glm(log(unemploy) ~ uempmedTage, data = economics)
+expLimUeUn <- glm(log(uempmedTage) ~ unemploy, data = economics)
+
+uempmedTageValues <- seq(0,176.40, 1)
+CountUnUe <- (predict(expLimUnUe,list(uempmedTage=uempmedTageValues)))
+CountExpUnUe <- exp(predict(expLimUnUe,list(uempmedTage=uempmedTageValues)))
+par(mfrow=c(1,2))
+plot(unemploy ~ uempmedTage, data = economics)
+lines(uempmedTageValues, CountExpUnUe, lwd = 2, col = "red")
+plot(log(unemploy) ~ uempmedTage, data = economics)
+lines(uempmedTageValues, CountUnUe, lwd = 2, col = "red")
+
+
+```
+
+##### Logarithmisches Modell
+```{r}
+par(mfrow=c(1,2))
+LogMUeMt <- glm(unemploy ~ log(uempmedTage), data = economics)
+MtValues <- seq(min(economics$uempmedTage),max(economics$uempmedTage),1)
+UePredict <- predict(LogMUeMt, list(uempmedTage=MtValues))
+plot(unemploy ~ uempmedTage, data = economics)
+lines(MtValues, UePredict, lwd = 2, col = "red")
+plot(unemploy ~ log(uempmedTage), data = economics)
+lines(log(MtValues), UePredict, lwd = 2, col = "red")
+```
+
+##### Polynom 10. Grades
+```{r}
+par(mfrow=c(1,2))
+uempmedTage <- economics$uempmedTage
+  unemploy <- economics$unemploy
+  modelUnUe <- lm(unemploy ~ uempmedTage + poly(uempmedTage, 10, raw = T))
+  myPredict <- predict( modelUnUe )
+  ix <- sort(uempmedTage,index.return=T)$ix
+  plot(unemploy ~ uempmedTage, data = economics)
+  lines(uempmedTage[ix], myPredict[ix], col=2, lwd=2 )
+  
+ unemploy <- economics$unemploy
+  uempmedTage <- economics$uempmedTage
+  modelUeUn <- lm(uempmedTage ~ unemploy + poly(unemploy, 10, raw = T))
+  myPredict <- predict( modelUeUn )
+  ix <- sort(unemploy,index.return=T)$ix
+  plot(uempmedTage ~ unemploy, data = economics)
+  lines(unemploy[ix], myPredict[ix], col=2, lwd=2 )
+```
+
+##### Grafische Darstellung
+
+
+```{r echo=FALSE}
+par(mfrow=c(2,4))
+plot(unemploy ~ uempmedTage, data = economics)
+abline(limUnUe, lw= 2, col = "red")
+plot(uempmedTage ~ unemploy, data = economics)
+abline(limUeUn, lw= 2, col = "red")
+
+
+expLimUnUe <- glm(log(unemploy) ~ uempmedTage, data = economics)
+expLimUeUn <- glm(log(uempmedTage) ~ unemploy, data = economics)
+
+uempmedTageValues <- seq(0,176.40, 1)
+CountUnUe <- (predict(expLimUnUe,list(uempmedTage=uempmedTageValues)))
+CountExpUnUe <- exp(predict(expLimUnUe,list(uempmedTage=uempmedTageValues)))
+plot(unemploy ~ uempmedTage, data = economics)
+lines(uempmedTageValues, CountExpUnUe, lwd = 2, col = "red")
+plot(log(unemploy) ~ uempmedTage, data = economics)
+lines(uempmedTageValues, CountUnUe, lwd = 2, col = "red")
+
+
+LogMUeMt <- glm(unemploy ~ log(uempmedTage), data = economics)
+MtValues <- seq(min(economics$uempmedTage),max(economics$uempmedTage),1)
+UePredict <- predict(LogMUeMt, list(uempmedTage=MtValues))
+plot(unemploy ~ uempmedTage, data = economics)
+lines(MtValues, UePredict, lwd = 2, col = "red")
+plot(unemploy ~ log(uempmedTage), data = economics)
+lines(log(MtValues), UePredict, lwd = 2, col = "red")
+
+uempmedTage <- economics$uempmedTage
+  unemploy <- economics$unemploy
+  modelUnUe <- lm(unemploy ~ uempmedTage + poly(uempmedTage, 10, raw = T))
+  myPredict <- predict( modelUnUe )
+  ix <- sort(uempmedTage,index.return=T)$ix
+  plot(unemploy ~ uempmedTage, data = economics)
+  lines(uempmedTage[ix], myPredict[ix], col=2, lwd=2 )
+ unemploy <- economics$unemploy
+  uempmedTage <- economics$uempmedTage
+  modelUeUn <- lm(uempmedTage ~ unemploy + poly(unemploy, 10, raw = T))
+  myPredict <- predict( modelUeUn )
+  ix <- sort(unemploy,index.return=T)$ix
+  plot(uempmedTage ~ unemploy, data = economics)
+  lines(unemploy[ix], myPredict[ix], col=2, lwd=2 )
+```
+
+
+#### Root Mean Squared Error, Mean Squared Error und Median Absolute Deviation
+
+```{r}
+calcErrors <- function(modelname, predicted, real) {
+rmse <- sqrt(mean((predicted - real)^2))
+mse <- rmse^2
+mad <- mad(predicted, real)
+data.frame(modelname = modelname, rmse = rmse, mse = mse, mad = mad)
+}
+
+errResult <- calcErrors("limUnUe", predict(limUnUe),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("limUeUn", predict(limUeUn),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("expUnUe", predict(expLimUnUe),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("expUeUn", predict(expLimUeUn),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("logUeUn", predict(LogMUeMt),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("logUeUn", predict(LogMUeMt),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("polUnUe", predict(modelUnUe),
+economics$unemploy)
+errResult
+
+errResult <- calcErrors("polUnUe", predict(modelUeUn),
+economics$unemploy)
+errResult
+```
+
+#### Teil 8: Underfitting, Overfitting & Angemessene Anpassung
+```{Text}
+Underfitting:
+  
+Tritt auf, wenn das Modell, welches man angepasst hat, simpler ist als die Daten, die
+verwendet werden.
+  
+Overfitting:
+  
+Tritt auf, wenn das Modell, welches man angepasst hat, komplexer ist als die Daten, die
+verwendet werden
+
+Angemessene Anpassung
+
+Tritt auf, wenn das Modell optimal angepasst wurde
+```
+
+### Aufgabe 2
+#### Teil 1: Regressionsmodell
+```{r}
+library(MASS)
+library(pROC)
+library(kableExtra)
+
+par(mfrow=c(1,1))
+pimalm<-glm(type~age+bmi+bp+glu,data=Pima.tr,family=binomial("logit"))
+
+```
+#### Teil 2: 
+##### Within-Sample
+```{r}
+  pr<-predict(pimalm, newdata = Pima.tr[,c("age","bmi","bp","glu")])
+  df<-data.frame(cbind(labels = as.numeric(Pima.tr$type)-1), predictions=ifelse(pr<=0,0,1))
+  pROC_obj1 <- roc(response = df$labels,
+  predictor=df$predictions,
+  smoothed = TRUE,
+
+  ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+
+  plot=TRUE, auc.polygon=TRUE,
+  max.auc.polygon=TRUE, grid=TRUE,
+  print.auc=TRUE, show.thres=TRUE)
+
+  sens.ci <- ci.se(pROC_obj1)
+
+  plot(sens.ci, type="shape", col="lightblue")
+
+  plot(sens.ci, type="bars")
+ ```
+```{r} 
+  pROC_obj1$sensitivities
+  pROC_obj1$specificities
+```
+##### Out-Of Sample
+```{r echo=FALSE}
+pr<-predict(pimalm, newdata = Pima.te[,c("age","bmi","bp","glu")])
+  df<-data.frame(cbind(labels = as.numeric(Pima.te$type)-1), predictions=ifelse(pr<=0,0,1))
+  pROC_obj1 <- roc(response = df$labels,
+  predictor=df$predictions,
+  smoothed = TRUE,
+
+  ci=TRUE, ci.alpha=0.9, stratified=FALSE,
+
+  plot=TRUE, auc.polygon=TRUE,
+  max.auc.polygon=TRUE, grid=TRUE,
+  print.auc=TRUE, show.thres=TRUE)
+
+  sens.ci <- ci.se(pROC_obj1)
+
+  plot(sens.ci, type="shape", col="lightblue")
+  
+```
+```{r}
+pROC_obj1$sensitivities
+  pROC_obj1$specificities
+
+```
+
+##### 10-Fache Kreuzvalidierung
+```{r}
+dataNew <- rbind(Pima.tr, Pima.te)
+set.seed(42)
+rows <- sample(nrow(dataNew))
+dataShuffled <- dataNew[rows,]
+n <- 53
+nr <- nrow(dataShuffled)
+cv_data <- split(dataShuffled, rep(1:ceiling(nr/n), each=n, length.out=nr))[1:10]
+validation <- data.frame()
+for(i in c(1:10)){
+test <- cv_data[[i]]
+x <- c(1:10)
+train <- data.frame()
+for( j in x[-(i)]){
+train <- rbind(train, cv_data[[j]])
+}
+model <- glm(type ~ age + npreg + glu + bp + ped + skin,
+data = train,
+family = binomial(link = "logit"))
+pred <- predict(model, newdata = test)
+df<-data.frame(cbind(labels = as.numeric(test$type)-1), predictions=ifelse(pred<=0,0,1))
+current <- c(table(df)[4]/(table(df)[2]+table(df)[4]),
+table(df)[1]/(table(df)[3]+table(df)[1]),
+table(df)[4], table(df)[2], table(df)[1], table(df)[3])
+validation <- rbind(validation, current)
+}
+colnames(validation) <- c("Sensitivitaet","Spezifizitaet", "True P", "False P",
+"True N", "False N")
+validation <- validation
+
+```
+```{r}
+validation 
+```
+
+#### Teil 3-4:  Bootstrapping | Grafische Darstellung
+
+```{r}
+gluMeans <- c()
+for(i in c(1:10000)){
+gluMeans <- c(gluMeans, mean(sample(dataShuffled$glu, 100, replace = T)))
+}
+gluHist <- hist(gluMeans,
+main = "Verteilung der Mittelwerte der Glukosekonzentration",
+xlab = "Mittelwerte von 10.000 Samples der Groesse 100",
+freq = F)
+q <- quantile(gluMeans, c(0.025, 0.975))
+lines(x = c(q[1], q[1]), y = c(0,0.13), col = "red")
+lines(x = c(q[2], q[2]), y = c(0,0.13), col = "red")
+lines(x = c(q[1], q[2]), y = c(0.065, 0.065), col = "blue")
+
+```
+
