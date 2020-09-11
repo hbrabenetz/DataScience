@@ -1,0 +1,176 @@
+---
+title: 'Semester 7: Aufgabe 1 - Explorative Datenanalyse'
+author: "Hans Brabenetz"
+date: "8/8/2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Aufgabenstellung
+
+Aufgabenstellung findet man auf [elearning](https://elearning.tgm.ac.at/mod/assign/view.php?id=74708)
+
+## Durchführung
+### Aufgabe 1
+
+#### Teil 1: Laden & Hilfe anzeigen
+
+```{r}
+# Load Titanic
+
+# Hilfe
+help(Titanic)
+# or ?Titanic
+```
+
+#### Teil 2: Datensatz untersuchen
+
+Hier gibt es viele individuelle Antworten.
+
+Ein Bsp für relative und absolute Häufigkeit.
+```{r}
+
+#Überlebende -> Geschlecht
+apply(Titanic,c(2,4),sum) #absolut
+apply(Titanic,c(2,4),sum)/apply(Titanic,c(2),sum) #relativ
+
+# Überlebende -> Klasse
+apply(Titanic,c(1,4),sum) #absolut
+apply(Titanic,c(1,4),sum)/apply(Titanic,c(1),sum) #relativ
+
+
+```
+Grafische Darstellung der Daten (Beispiel)
+```{r pressure, echo=TRUE}
+
+#Überlebende -> Geschlecht
+barplot(apply(Titanic,c(2,4),sum)/apply(Titanic,c(2),sum),beside=T,
+main="Ueberleben bezogen auf das Geschlecht")
+legend("top",legend=c("M","F"),col=c("darkgrey","lightgrey"),lwd=5)
+
+
+```
+
+#### Teil 3: mosaicplot(), assocplot()
+
+```{r}
+# Mosaic
+mosaicplot(~ Sex + Age + Survived, data = Titanic, shade = TRUE)
+# Assoc
+assocplot(apply(Titanic,c(2,4),sum),main="Ueberleben bezogen auf das Geschlecht")
+```
+
+#### Teil 4: Frauen und Kinder zuerst
+```{r}
+# Frauen
+apply(Titanic,c(2,4),sum)
+apply(Titanic,c(1,2,4),sum)
+
+# Kinder
+apply(Titanic,c(3,4),sum)
+apply(Titanic,c(1,3,4),sum)
+```
+
+#### Teil 5: Simpson's Paradoxon
+> 
+Das Simpson-Paradoxon, benannt nach Edward Hugh Simpson ist ein Paradoxon aus der Statistik. Dabei scheint es, dass die Bewertung verschiedener Gruppen unterschiedlich ausfällt, je nachdem ob man die Ergebnisse der Gruppen kombiniert oder nicht. Dieses Phänomen tritt oft bei statistischen Auswertungen in den Sozialwissenschaften und in der Medizin auf. 
+[Quelle](https://www.umm.uni-heidelberg.de/inst/biom/lexikon/data/s020.html)]
+
+Ist anhand der Überlebensrate der Kinder ersichtlich (Siehe Teil 4)
+
+### Aufgabe 2
+
+#### Teil 1: state.x77
+
+```{r}
+# Load state.x77
+
+# Hilfe
+help("state.x77")
+# or ?state.x77
+```
+Daten beschreiben:
+Population - Bevölkerung pro 1000 in verschiedenen Staaten Amerikas (1975) - metrisch                      
+Income     - Durchschnittseinkommen pro Kopf, welches im Jahr 1974        - metrisch und rationalskalliert 
+Illiteracy - Prozentsatz der Analphabeten eines Bundesstaates             - metrisch und rationalskalliert 
+Life Exp   - Lebenserwartung                                              - metrisch und rationalskalliert 
+Murder     - Mord- und nicht-fahrl¨ assige T¨ otungsrate pro 100000 Einwohner eines Bundesstaates - metrisch und rationalskalliert 
+HS Grad    - Prozentsatz der Absolventen einer weiterfuhrenden Schule eines Bundesstaates - metrisch und rationalskalliert 
+Frost      - Tage bei denen es unter 0 Grad Celsius in einer großen Stadt hat - metrisch                      
+Area       - Fläche eines Bundesstaates in Quadratmeilen                  - metrisch                       
+
+#### Teil 2: geeignete Schätzer
+
+```{r}
+# Daten abspeichern
+pop <- state.x77[,"Population"]
+inc <- state.x77[,"Income"]
+ill <- state.x77[,"Illiteracy"]
+life <- state.x77[,"Life Exp"]
+mur <- state.x77[,"Murder"]
+hg <- state.x77[,"HS Grad"]
+fr <- state.x77[,"Frost"]
+area <- state.x77[,"Area"]
+
+# Funktio um schätzer zubewerten
+schaetzer <- function(var){
+  print("Mittelwert")
+  print(mean(var))
+  
+  print("getrimmter Mittelwert")
+  print(mean(var, trim= 0.2))
+  
+  print("Median")
+  print(median(var))
+  
+  print("Standardabweichung")
+  print(sd(var))
+  
+  print("MAD")
+  print(mad(var))
+}
+
+schaetzer(pop)
+schaetzer(inc)
+schaetzer(ill)
+schaetzer(life)
+schaetzer(mur)
+schaetzer(hg)
+schaetzer(fr)
+schaetzer(area)
+
+```
+#### Teil 3 / 4 : Grafische Dartstellung
+```{r}
+draw <- function(data,name) {
+par(mfrow=c(2,2))
+boxplot(data,horizontal=T, main=paste("Boxplot von",name))
+hist(data, freq=F, main=paste("Histogramm von",name))
+lines(density(data), col="red", lwd=2, xlab="", ylab="", main="HIST")
+plot(ecdf(data), main=paste("ECDF von",name))
+qqnorm(data, main=paste("QQ-Plot von",name))
+qqline(data)}
+
+draw(pop, 'Population')
+draw(inc, 'Income')
+draw(ill, 'Illiterac<')
+draw(life, 'Life Exp')
+draw(mur, 'Murder')
+draw(hg, 'HS GRAD')
+draw(fr, 'Frost')
+draw(area, 'Area')
+
+```
+
+Population - Unimodal - rechtsschief - leichten Rand - schwerern Rand
+Income - Unimodal - sysmetrisch - normalen Rand - normalen Rand
+Illiteracy - Unimodal - rechtsschief - leichten Rand - normalen Rand
+Life Exp - bimodal - sysmetrisch - schwerern Rand - leichten Rand
+Murder - multimodal - sysmetrisch - leichten Rand - leichten Rand
+
+#### Teil 5: Ausreißer
+```{r}
+pop > 1100
+```
+
